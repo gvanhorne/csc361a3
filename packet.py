@@ -1,5 +1,6 @@
 from ip_header import IPHeader
 from udp_header import UDPHeader
+from icmp_header import ICMPHeader
 from ethernet_header import EthernetHeader
 
 class Packet():
@@ -53,6 +54,12 @@ class Packet():
             header.get_len(packet_bytes[offset + 4:offset + 6])
             header.get_checksum(packet_bytes[offset + 6:offset + 8])
             header.set_data_offset()
+        elif ip_header.protocol == 1:
+            header = ICMPHeader()
+            offset = 14+ip_header.ip_header_len
+            header.get_type(packet_bytes[offset:offset + 1])
+            header.get_code(packet_bytes[offset + 1: offset + 2])
+            header.get_checksum(packet_bytes[offset + 2: offset + 4])
         else:
             return
         return cls(ip_header, header, packet_bytes)
