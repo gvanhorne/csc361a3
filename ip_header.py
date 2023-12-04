@@ -11,6 +11,8 @@ class IPHeader:
         self.dst_ip = None
         self.ip_header_len = 0
         self.total_len = 0
+        self.protocol = None
+        self.ttl = None
 
     def ip_set(self,src_ip,dst_ip):
         self.src_ip = src_ip
@@ -24,6 +26,9 @@ class IPHeader:
 
     def protocol_set(self, protocol):
         self.protocol = protocol
+
+    def ttl_set(self, ttl):
+        self.ttl = ttl
 
     def get_IP(self,buffer1,buffer2):
         src_addr = struct.unpack('BBBB',buffer1)
@@ -48,3 +53,7 @@ class IPHeader:
     def get_protocol(self, buffer):
         protocol = struct.unpack('B', buffer)[0]
         self.protocol_set(protocol)
+
+    def get_ttl(self, buffer):
+        ttl = struct.unpack('B', buffer)[0]
+        self.ttl_set(ttl)
