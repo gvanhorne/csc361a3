@@ -45,13 +45,14 @@ class Packet():
         ip_header_bytes = packet_bytes[14:14+ip_header.ip_header_len]
         protocol = ip_header.get_protocol(packet_bytes[23:24])
         ip_header.get_IP(packet_bytes[26:30], packet_bytes[30:34])
-        if protocol == 17:
+        if ip_header.protocol == 17:
             header = UDPHeader()
             offset = 14+ip_header.ip_header_len
             header.get_src_port(packet_bytes[offset:offset + 2])
             header.get_dst_port(packet_bytes[offset + 2:offset + 4])
             header.get_len(packet_bytes[offset + 4:offset + 6])
             header.get_checksum(packet_bytes[offset + 6:offset + 8])
+            header.set_data_offset()
         else:
-            header = None
+            return
         return cls(ip_header, header, packet_bytes)

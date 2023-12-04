@@ -6,9 +6,13 @@ from connection import Connection
 from utils import filtered_packet
 
 def analyze_traceroute(connections):
-    print(f"The IP address of the source node: {connections[0].src_ip}")
-    print(f"The IP address of the ultimate destination node: {connections[0].dst_ip}")
-    print(f"The IP addresses of the intermediate destination nodes:")
+    # for connection in connections:
+        # print(f"The IP address of the source node: {connection.src_ip}")
+    # print(len(connections))
+
+    # print(f"The IP address of the ultimate destination node: {connections[0].dst_ip}")
+    # print(f"The IP addresses of the intermediate destination nodes:")
+    return
 
 def update_duration_stats(duration, min_duration, max_duration, sum_duration):
     """
@@ -79,20 +83,18 @@ def add_connection(packet, connections):
     """
     packet_connection = Connection(
         packet.ip_header.src_ip,
-        packet.tcp_header.src_port,
+        packet.datagram_header.src_port,
         packet.ip_header.dst_ip,
-        packet.tcp_header.dst_port
+        packet.datagram_header.dst_port
     )
 
     existing_connection = next((conn for conn in connections if conn == packet_connection), None)
     if existing_connection:
-        existing_connection.update_state(packet, packet_header.timestamp)
         existing_connection.add_packet(packet)
     else:
         # No matching connection, so append to the list of collections
         packet_connection.connection_src = packet.ip_header.src_ip
         packet_connection.connection_dst = packet.ip_header.dst_ip
-        packet_connection.update_state(packet, packet_header.timestamp)
         packet_connection.add_packet(packet)
         connections.append(packet_connection)
 
@@ -121,7 +123,7 @@ if __name__ == "__main__":
                     packet_bytes = f.read(packet_header.incl_len)
 
                     # Create a Packet instance by parsing the packet data
-                    packet = Packet.from_bytes(packet_bytes)
+                    packet = Packet.from_bytes(packet_bytes, hex(global_header.magic_number))
 
                     # Handle the timestamp for the packet
                     if orig_time == 0:
@@ -132,9 +134,11 @@ if __name__ == "__main__":
                         packet_header.timestamp_set(packet_header_bytes[0:4], packet_header_bytes[4:8], orig_time)
 
                     # Set the packet's timestamp and add the connection to the list
-                    packet.timestamp = packet_header.timestamp
-                    if not filtered_packet(packet):
+                    if packet and not filtered_packet(packet):
+                        print(packet.ip_header.protocol, packet.datagram_header.dst_port)
+                        packet.timestamp = packet_header.timestamp
                         add_connection(packet, connections)
+
     except IOError:
         print("Could not read file:", tracefile)
     finally:

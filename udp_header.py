@@ -1,11 +1,15 @@
 import struct
-
 class UDPHeader:
-    def __init__(self, src_port, dst_port, len, checksum):
-        self.src_port = src_port
-        self.dst_port = dst_port
-        self.len = len
-        self.checksum = checksum
+    def __init__(self):
+        self.src_port = None
+        self.dst_port = None
+        self.len = 0
+        self.checksum = None
+        self.data_offset = 0
+        self.byte_order = 0
+
+    def set_data_offset(self):
+        self.data_offset = self.len * 8
 
     def src_port_set(self, src):
         self.src_port = src
@@ -40,9 +44,9 @@ class UDPHeader:
         return None
 
     def get_len(self, buffer):
-        len = struct.unpack('BB', buffer)
-        self.len_set(len)
+        length = struct.unpack(f'>H', buffer)
+        self.len_set(length[0])
 
     def get_checksum(self, buffer):
-        checksum = struct.unpack('BB', buffer)
-        self.checksum_set(checksum)
+        checksum = struct.unpack(f'>H', buffer)
+        self.checksum_set(checksum[0])
