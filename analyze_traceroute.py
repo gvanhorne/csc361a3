@@ -6,8 +6,20 @@ from connection import Connection
 from utils import filtered_packet
 
 def analyze_traceroute(connections):
-    print(f"The IP address of the source node: {connections[0].src_ip}")
-    print(f"The IP address of the ultimate destination node: {connections[0].dst_ip}")
+    source_node = connections[0].src_ip
+    destination_node = connections[0].dst_ip
+    print(f"The IP address of the source node: {source_node}")
+    print(f"The IP address of the ultimate destination node: {destination_node}")
+    print(f"The IP addresses of intermediate nodes:")
+    i = 1
+    intermediate_nodes = set()
+    for connection in connections:
+        intermediate_nodes.add(connection.src_ip)
+    intermediate_nodes.remove(source_node)
+    intermediate_nodes.remove(destination_node)
+    for node in intermediate_nodes:
+        print(f"router {i}: {node}")
+        i += 1
     return
 
 def update_duration_stats(duration, min_duration, max_duration, sum_duration):
@@ -77,11 +89,17 @@ def add_connection(packet, connections):
     Returns:
         None
     """
+    if packet.icmp_message:
+        src_port = packet.datagram_header.udp_copy.src_port
+        dst_port = packet.datagram_header.udp_copy.dst_port
+    else:
+        src_port = packet.datagram_header.src_port
+        dst_port = packet.datagram_header.dst_port
     packet_connection = Connection(
         packet.ip_header.src_ip,
-        packet.datagram_header.src_port,
+        src_port,
         packet.ip_header.dst_ip,
-        packet.datagram_header.dst_port
+        dst_port
     )
 
     existing_connection = next((conn for conn in connections if conn == packet_connection), None)
