@@ -1,5 +1,9 @@
 def filtered_packet(packet) -> bool:
+    types = [0, 3, 8, 11]
     if packet.ip_header.protocol == 1:
+        type = packet.datagram_header.type
+        if type not in types:
+            return True
         return False
     elif packet.ip_header.protocol == 17:
         if not (packet.datagram_header.dst_port >= 33434 and packet.datagram_header.dst_port <= 33529):
