@@ -11,6 +11,7 @@ def analyze_traceroute(udp_packets, icmp_packets):
     print(f"The IP Address of the ultimate destination node: {destination_node}")
     print(f"The IP Addresses of the intermediate destination nodes")
     pairs = []
+    i = 1
 
     intermediate_router_ips = set()
     intermediate_routers = []
@@ -32,10 +33,11 @@ def analyze_traceroute(udp_packets, icmp_packets):
               if pair["udp"].ip_header.src_ip == dst_ip and pair["udp"].datagram_header.src_port == src_port and pair["udp"].datagram_header.dst_port == dst_port:
                   pair["icmp"] = packet
         intermediate_router_ips.add(packet.ip_header.src_ip)
-    pairs = sorted(pairs, key=lambda pair: (pair["udp"].ip_header.ttl, pair["udp"].packet_No))
+    pairs = sorted(pairs, key=lambda pair: (pair["udp"].ip_header.ttl, pair["udp"].packet_No, pair["udp"].datagram_header.dst_port))
     for pair in pairs:
       if pair["icmp"]:
-        print(pair["icmp"].ip_header.src_ip)
+        print(f"router {i}: {pair['icmp'].ip_header.src_ip}")
+        i += 1
 
 
 if __name__ == "__main__":
