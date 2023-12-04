@@ -1,6 +1,9 @@
 def filtered_packet(packet) -> bool:
-    # add protocol 1 when ready
-    return packet.ip_header.protocol != 17 or (packet.datagram_header.src_port == 53 or packet.datagram_header.dst_port == 53)
+    if packet.ip_header.protocol == 1:
+        return False
+    elif packet.ip_header.protocol == 17:
+        if not (packet.datagram_header.dst_port >= 33434 and packet.datagram_header.dst_port <= 33529):
+            return True
 
 def get_byte_order(magic_number):
     if magic_number == '0xa1b2c3d4':
