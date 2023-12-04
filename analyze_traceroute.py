@@ -5,16 +5,30 @@ from packet import Packet
 from utils import filtered_packet
 
 def analyze_traceroute(udp_packets, icmp_packets):
-    print(udp_packets)
+    source_node = udp_packets[0].ip_header.src_ip
+    destination_node = udp_packets[0].ip_header.dst_ip
+    print(f"The IP Address of the source node: {source_node}")
+    print(f"The IP Address of the ultimate destination node: {destination_node}")
+    print(f"The IP Addresses of the intermediate destination nodes")
     pairs = []
 
+    intermediate_router_ips = set()
+    intermediate_routers = []
     for packet in udp_packets:
         src_ip = packet.ip_header.src_ip
         src_port = packet.datagram_header.src_port
         dst_ip = packet.ip_header.dst_ip
         dst_port = packet.datagram_header.dst_port
     for packet in icmp_packets:
-        print(packet.packet_No)
+      ip = packet.ip_header.src_ip
+      if ip != source_node and ip != destination_node:
+        if packet.ip_header.src_ip not in intermediate_router_ips:
+          intermediate_routers.append(packet)
+        intermediate_router_ips.add(packet.ip_header.src_ip)
+    sorted_routers = sorted(intermediate_routers, key=lambda router: router.ip_header.ttl)
+    for router in sorted_routers:
+      print(router.ip_header.src_ip)
+      
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
