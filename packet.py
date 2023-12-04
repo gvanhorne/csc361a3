@@ -42,6 +42,7 @@ class Packet():
         ip_header.get_header_len(packet_bytes[14:15])
         ip_header.get_total_len(packet_bytes[16:18])
         ip_header_bytes = packet_bytes[14:14+ip_header.ip_header_len]
+        ip_header.get_ttl(packet_bytes[22:23])
         protocol = ip_header.get_protocol(packet_bytes[23:24])
         ip_header.get_IP(packet_bytes[26:30], packet_bytes[30:34])
 
