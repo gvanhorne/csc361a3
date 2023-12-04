@@ -41,6 +41,7 @@ class Packet():
         ip_header = IPHeader()
         ip_header.get_header_len(packet_bytes[14:15])
         ip_header.get_total_len(packet_bytes[16:18])
+        ip_header.get_flags(packet_bytes[20:21])
         ip_header_bytes = packet_bytes[14:14+ip_header.ip_header_len]
         ip_header.get_ttl(packet_bytes[22:23])
         protocol = ip_header.get_protocol(packet_bytes[23:24])
@@ -67,6 +68,7 @@ class Packet():
             ip_header_copy = IPHeader()
             ip_header_copy.get_header_len(packet_bytes[offset: offset + 1])
             ip_header_copy.get_total_len(packet_bytes[offset + 2: offset + 4])
+            ip_header_copy.get_flags(packet_bytes[offset + 6: offset + 7])
             ip_header_bytes = packet_bytes[offset:offset + ip_header_copy.ip_header_len]
             ip_header.get_ttl(packet_bytes[offset + 8: offset + 9])
             protocol = ip_header_copy.get_protocol(packet_bytes[offset + 9: offset + 10])
