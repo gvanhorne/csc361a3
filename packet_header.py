@@ -1,5 +1,5 @@
 import struct
-
+from utils import get_byte_order
 class PacketHeader:
     """
     Represents a packet header.
@@ -63,16 +63,7 @@ class PacketHeader:
         """
         if len(header_bytes) != 16:
             raise ValueError("Invalid packet header length")
-        if magic_number == '0xa1b2c3d4':
-            byte_order = ">"
-        elif magic_number == '0xd4c3b2a1':
-            byte_order = "<"
-        elif magic_number == '0xa1b23c4d':
-            byte_order = ">"
-        elif magic_number == '0x4d3cb2a1':
-            byte_order = "<"
-        else:
-            raise ValueError("Invalid magic number in packet header")
+        byte_order = get_byte_order(magic_number)
 
         format_string = byte_order + "IIII"
         ts_sec, ts_usec, incl_len, orig_len = struct.unpack(format_string, header_bytes)
