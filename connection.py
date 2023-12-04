@@ -97,7 +97,7 @@ class Connection:
       window_sizes.append(packet.tcp_header.window_size)
     self.window_sizes = window_sizes
     return self.window_sizes
-  
+
   def add_packet(self, packet):
     """
     Add a packet to the connection.
@@ -106,33 +106,6 @@ class Connection:
         packet (Packet): The packet to add.
     """
     self.packets.append(packet)
-
-  def update_state(self, packet, timestamp):
-    """
-    Update the connection state based on the received packet and timestamp.
-
-    Args:
-        packet (Packet): The received packet.
-        timestamp (float): The timestamp of the packet.
-    """
-    self.num_syn += packet.tcp_header.flags["SYN"]
-    self.num_fin += packet.tcp_header.flags["FIN"]
-    self.num_rst += packet.tcp_header.flags["RST"]
-    if self.num_rst > 0:
-      self.state = f"S{self.num_syn}F{self.num_fin}/R"
-    else:
-      self.state = f"S{self.num_syn}F{self.num_fin}"
-    if self.num_syn == 1:
-      self.start_time = timestamp
-    if packet.tcp_header.flags["FIN"] == 1:
-      self.end_time = timestamp
-    if packet.ip_header.dst_ip == self.connection_dst:
-      self.num_packets_to_dst += 1
-      self.num_bytes_to_dst += packet.data_bytes
-    elif packet.ip_header.dst_ip == self.connection_src:
-      self.num_packets_to_src += 1
-      self.num_bytes_to_src += packet.data_bytes
-    self.total_num_bytes += packet.data_bytes
 
   def get_min_rtt(self):
     """
