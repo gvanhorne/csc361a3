@@ -3,10 +3,13 @@ from pcap_header import PCAPHeader
 from packet_header import PacketHeader
 from packet import Packet
 from connection import Connection
+from utils import filtered_packet
 
 def analyze_traceroute(connections):
-    for connection in connections:
-        print(connection.src_ip)
+    print(f"The IP address of the source node: {connections[0].src_ip}")
+    print(f"The IP address of the ultimate destination node: {connections[0].dst_ip}")
+    print(f"The IP addresses of the intermediate destination nodes:")
+
 def update_duration_stats(duration, min_duration, max_duration, sum_duration):
     """
     Update duration statistics.
@@ -130,7 +133,8 @@ if __name__ == "__main__":
 
                     # Set the packet's timestamp and add the connection to the list
                     packet.timestamp = packet_header.timestamp
-                    add_connection(packet, connections)
+                    if not filtered_packet(packet):
+                        add_connection(packet, connections)
     except IOError:
         print("Could not read file:", tracefile)
     finally:
