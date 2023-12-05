@@ -5,7 +5,7 @@ class ICMPHeader:
         self.type = None
         self.code = None
         self.checksum = None
-        self.rest = None
+        self.seq_num = None
         self.ip_header_copy = None
         self.udp_copy = None
 
@@ -18,8 +18,8 @@ class ICMPHeader:
     def set_checksum(self, checksum):
         self.checksum = checksum
 
-    def set_rest_of_header(self, rest):
-        self.rest = rest
+    def set_rest_of_header(self, seq_num):
+        self.seq_num = seq_num
 
     def set_ip_header_copy(self, ip_header_copy):
         self.ip_header_copy = ip_header_copy
