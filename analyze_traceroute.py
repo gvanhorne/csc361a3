@@ -32,22 +32,22 @@ def analyze_traceroute(udp_packets, icmp_packets):
         dst_port = packet.datagram_header.dst_port
         pairs.append({"udp": packet, "icmp": None})
     for packet in icmp_packets:
-      ip = packet.ip_header.src_ip
-      if ip != source_node and ip != destination_node:
-        if packet.ip_header.src_ip not in intermediate_router_ips:
-          for pair in pairs:
-              src_ip = packet.ip_header.src_ip
-              src_port = packet.datagram_header.udp_copy.src_port
-              dst_ip = packet.ip_header.dst_ip
-              dst_port = packet.datagram_header.udp_copy.dst_port
-              if pair["udp"].ip_header.src_ip == dst_ip and pair["udp"].datagram_header.src_port == src_port and pair["udp"].datagram_header.dst_port == dst_port:
-                  pair["icmp"] = packet
+        ip = packet.ip_header.src_ip
+        if ip != source_node and ip != destination_node:
+            if packet.ip_header.src_ip not in intermediate_router_ips:
+                for pair in pairs:
+                    src_ip = packet.ip_header.src_ip
+                    src_port = packet.datagram_header.udp_copy.src_port
+                    dst_ip = packet.ip_header.dst_ip
+                    dst_port = packet.datagram_header.udp_copy.dst_port
+                if pair["udp"].ip_header.src_ip == dst_ip and pair["udp"].datagram_header.src_port == src_port and pair["udp"].datagram_header.dst_port == dst_port:
+                    pair["icmp"] = packet
         intermediate_router_ips.add(packet.ip_header.src_ip)
     pairs = sorted(pairs, key=lambda pair: (pair["udp"].ip_header.ttl, pair["udp"].packet_No, pair["udp"].datagram_header.dst_port))
     for pair in pairs:
-      if pair["icmp"]:
-        print(f"    router {i}: {pair['icmp'].ip_header.src_ip}")
-        i += 1
+        if pair["icmp"]:
+            print(f"    router {i}: {pair['icmp'].ip_header.src_ip}")
+            i += 1
 
     print("The values in protocol fields of IP headers:")
     if icmp_value:
