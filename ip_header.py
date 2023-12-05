@@ -69,7 +69,7 @@ class IPHeader:
     def get_flags(self, buffer):
         flags = struct.unpack('B', buffer)[0]
         flags = flags & 7
-        return flags
+        self.flags_set(flags)
 
     def get_identification(self, buffer):
         identification = struct.unpack('>H', buffer)[0]
