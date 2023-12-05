@@ -14,6 +14,7 @@ class IPHeader:
         self.protocol = None
         self.ttl = None
         self.flags = None
+        self.id = None
 
     def ip_set(self,src_ip,dst_ip):
         self.src_ip = src_ip
@@ -33,6 +34,9 @@ class IPHeader:
 
     def flags_set(self, flags):
         self.flags = flags
+
+    def identification_set(self, identification):
+        self.id = identification
 
     def get_IP(self,buffer1,buffer2):
         src_addr = struct.unpack('BBBB',buffer1)
@@ -65,5 +69,8 @@ class IPHeader:
     def get_flags(self, buffer):
         flags = struct.unpack('B', buffer)[0]
         flags = flags & 7
-        print(flags)
         return flags
+
+    def get_identification(self, buffer):
+        identification = struct.unpack('>H', buffer)[0]
+        self.identification_set(identification)
