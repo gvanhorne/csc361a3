@@ -40,5 +40,5 @@ class ICMPHeader:
         self.set_checksum(checksum)
 
     def get_rest_of_header(self, buffer):
-        rest_of_header = struct.unpack('>HH', buffer)[0]
+        rest_of_header = struct.unpack('>HH', buffer)[1]
         self.set_rest_of_header(rest_of_header)
