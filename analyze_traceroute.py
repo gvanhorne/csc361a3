@@ -37,6 +37,28 @@ def analyze_traceroute_windows(icmp_packets):
         if len(pairs[pair]) > 1:
             print(f"    router {i}: {pairs[pair]['reply'].ip_header.src_ip}")
             i += 1
+    print("The values in protocol fields of IP headers:")
+    if icmp_value:
+        print(f"    {icmp_value}")
+
+    fragments = []
+    for packet1 in icmp_packets:
+        matching_elements = 0
+        offset = 0
+
+        for packet2 in icmp_packets:
+            if packet1.ip_header.id == packet2.ip_header.id:
+                matching_elements += 1
+                if packet2.ip_header.offset != 0 and packet2.ip_header.flags == 0:
+                    offset = packet2.ip_header.offset
+
+        if not any(entry["id"] == packet1.ip_header.id for entry in fragments):
+            fragments.append({"id": packet1.ip_header.id, "num_frag": matching_elements, "offset": offset})
+    fragments = sorted(fragments, key=lambda frag: frag['id'])
+    for fragment in fragments:
+        if fragment['id'] != 0:
+            print(f"The number of fragments created from the original datagram with id {fragment['id']} is: {fragment['num_frag']}")
+            print(f"The offset of the last fragment is: {fragment['offset']}")
 
 
 
