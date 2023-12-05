@@ -63,11 +63,11 @@ def analyze_traceroute(udp_packets, icmp_packets):
             if packet1.ip_header.id == packet2.ip_header.id:
                 matching_elements += 1
 
-        fragments.append({"id": packet1.ip_header.id, "num_frag": matching_elements, "no": packet1.packet_No})
+        fragments.append({"id": packet1.ip_header.id, "num_frag": matching_elements})
 
     fragments = sorted(fragments, key=lambda frag: frag['id'])
     for fragment in fragments:
-        print(f"The number of fragments created from the original datagram with id {fragment['id']} is: {fragment['num_frag']}, {fragment['no']}")
+        print(f"The number of fragments created from the original datagram with id {fragment['id']} is: {fragment['num_frag']}")
     # print(f"The number of fragments created from the original datagram with id {packet.ip_header.identification} is: x")
 
 
