@@ -80,4 +80,4 @@ class IPHeader:
     def get_frag_offset(self, buffer):
         offset = struct.unpack('>H', buffer)[0]
         offset = offset & 0b1111111111111
-        self.frag_offset_set(buffer)
+        self.frag_offset_set(offset*8)
