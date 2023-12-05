@@ -37,9 +37,9 @@ def analyze_traceroute_windows(icmp_packets):
         if len(pairs[pair]) > 1:
             print(f"    router {i}: {pairs[pair]['reply'].ip_header.src_ip}")
             i += 1
-    print("The values in protocol fields of IP headers:")
+    print("\nThe values in protocol fields of IP headers:")
     if icmp_value:
-        print(f"    {icmp_value}")
+        print(f"    {icmp_value}\n")
 
     fragments = []
     for packet1 in icmp_packets:
@@ -58,7 +58,7 @@ def analyze_traceroute_windows(icmp_packets):
     for fragment in fragments:
         if fragment['id'] != 0:
             print(f"The number of fragments created from the original datagram with id {fragment['id']} is: {fragment['num_frag']}")
-            print(f"The offset of the last fragment is: {fragment['offset']}")
+            print(f"The offset of the last fragment is: {fragment['offset']}\n")
 
 
 
@@ -125,11 +125,11 @@ def analyze_traceroute_linux(udp_packets, icmp_packets):
             print(f"    router {i}: {pair['icmp'].ip_header.src_ip}")
             i += 1
 
-    print("The values in protocol fields of IP headers:")
+    print("\nThe values in protocol fields of IP headers:")
     if icmp_value:
         print(f"    {icmp_value}")
     if udp_value:
-        print(f"    {udp_value}")
+        print(f"    {udp_value}\n")
 
     fragments = []
     for packet1 in udp_packets:
@@ -147,7 +147,7 @@ def analyze_traceroute_linux(udp_packets, icmp_packets):
     fragments = sorted(fragments, key=lambda frag: frag['id'])
     for fragment in fragments:
         print(f"The number of fragments created from the original datagram with id {fragment['id']} is: {fragment['num_frag']}")
-        print(f"The offset of the last fragment is: {fragment['offset']}")
+        print(f"The offset of the last fragment is: {fragment['offset']}\n")
     # print(f"The number of fragments created from the original datagram with id {packet.ip_header.identification} is: x")
 
 
