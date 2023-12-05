@@ -67,9 +67,7 @@ class IPHeader:
         self.ttl_set(ttl)
 
     def get_flags(self, buffer):
-        flags = struct.unpack('B', buffer)[0]
-        flags = flags & 7
-        self.flags_set(flags)
+        self.flags_set((buffer >> 5) & 0b111)
 
     def get_identification(self, buffer):
         identification = struct.unpack('>H', buffer)[0]
