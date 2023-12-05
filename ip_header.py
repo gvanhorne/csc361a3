@@ -15,6 +15,7 @@ class IPHeader:
         self.ttl = None
         self.flags = None
         self.id = None
+        self.offset = None
 
     def ip_set(self,src_ip,dst_ip):
         self.src_ip = src_ip
@@ -37,6 +38,9 @@ class IPHeader:
 
     def identification_set(self, identification):
         self.id = identification
+
+    def frag_offset_set(self, offset):
+        self.offset = offset
 
     def get_IP(self,buffer1,buffer2):
         src_addr = struct.unpack('BBBB',buffer1)
@@ -72,3 +76,8 @@ class IPHeader:
     def get_identification(self, buffer):
         identification = struct.unpack('>H', buffer)[0]
         self.identification_set(identification)
+
+    def get_frag_offset(self, buffer):
+        offset = struct.unpack('>H', buffer)[0]
+        offset = offset & 0b1111111111111
+        self.frag_offset_set(buffer)

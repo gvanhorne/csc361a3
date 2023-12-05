@@ -47,6 +47,7 @@ class Packet():
         ip_header.get_ttl(packet_bytes[22:23])
         protocol = ip_header.get_protocol(packet_bytes[23:24])
         ip_header.get_IP(packet_bytes[26:30], packet_bytes[30:34])
+        ip_header.get_frag_offset(packet_bytes[20:22])
 
         icmp = False
         if ip_header.protocol == 17:
@@ -71,6 +72,7 @@ class Packet():
             ip_header_copy.get_total_len(packet_bytes[offset + 2: offset + 4])
             ip_header_copy.get_identification(packet_bytes[offset + 4: offset + 6])
             ip_header_copy.get_flags(packet_bytes[offset + 6])
+            ip_header_copy.get_frag_offset(packet_bytes[offset + 6:offset + 8])
             ip_header_bytes = packet_bytes[offset:offset + ip_header_copy.ip_header_len]
             ip_header.get_ttl(packet_bytes[offset + 8: offset + 9])
             protocol = ip_header_copy.get_protocol(packet_bytes[offset + 9: offset + 10])
