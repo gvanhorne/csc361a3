@@ -7,6 +7,7 @@ class ICMPHeader:
         self.checksum = None
         self.seq_num = None
         self.ip_header_copy = None
+        self.icmp_copy = None
         self.udp_copy = None
 
     def set_type(self, type):
@@ -26,6 +27,9 @@ class ICMPHeader:
 
     def set_udp_copy(self, udp_copy):
         self.udp_copy = udp_copy
+
+    def set_icmp_copy(self, icmp_copy):
+        self.icmp_copy = icmp_copy
 
     def get_type(self, buffer):
         type = struct.unpack('B', buffer)[0]

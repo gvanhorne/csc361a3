@@ -87,6 +87,13 @@ class Packet():
                 udp_header_copy.get_checksum(packet_bytes[offset + 6:offset + 8])
                 udp_header_copy.set_data_offset()
                 header.set_udp_copy(udp_header_copy)
+            elif ip_header_copy.protocol == 1:
+                icmp_header_copy = ICMPHeader()
+                icmp_header_copy.get_type(packet_bytes[offset:offset + 1])
+                icmp_header_copy.get_code(packet_bytes[offset + 1: offset + 2])
+                icmp_header_copy.get_checksum(packet_bytes[offset + 2: offset + 4])
+                icmp_header_copy.get_rest_of_header(packet_bytes[offset + 4: offset + 8])
+                header.set_icmp_copy(icmp_header_copy)
         else:
             return
         return cls(ip_header, header, packet_bytes, icmp)

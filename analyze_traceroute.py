@@ -3,8 +3,62 @@ from pcap_header import PCAPHeader
 from packet_header import PacketHeader
 from packet import Packet
 from utils import filtered_packet
+OS = 'linux'
 
-def analyze_traceroute(udp_packets, icmp_packets):
+def analyze_traceroute_windows(icmp_packets):
+    icmp_value = None
+    if len(icmp_packets):
+        icmp_value = "1: ICMP"
+    else:
+        print(f"Error: No traceroute packets found")
+        sys.exit(1)
+    source_node = icmp_packets[0].ip_header.src_ip
+    destination_node = icmp_packets[0].ip_header.dst_ip
+    print(f"The IP Address of the source node: {source_node}")
+    print(f"The IP Address of the ultimate destination node: {destination_node}")
+    print(f"The IP Addresses of the intermediate destination nodes:")
+
+    pairs = {}
+    i = 1
+
+    intermediate_router_ips = set()
+    intermediate_routers = []
+
+    for packet in icmp_packets:
+        if packet.datagram_header.type == 8 and packet.ip_header.src_ip == source_node:
+            seq_num = packet.datagram_header.seq_num
+            pairs[seq_num] = {"request": packet}
+    for packet in icmp_packets:
+        if packet.datagram_header.icmp_copy and packet.datagram_header.type == 11 and pairs[packet.datagram_header.icmp_copy.seq_num]:
+            if packet.ip_header.src_ip not in intermediate_router_ips:
+                pairs[packet.datagram_header.icmp_copy.seq_num]["reply"] = packet
+                intermediate_router_ips.add(packet.ip_header.src_ip)
+    for pair in pairs:
+        if len(pairs[pair]) > 1:
+            print(f"    router {i}: {pairs[pair]['reply'].ip_header.src_ip}")
+            i += 1
+
+
+
+
+    # for packet in icmp_packets:
+    #     ip = packet.ip_header.src_ip
+    #     if packet.ip_header.src_ip not in intermediate_router_ips:
+    #         for pair in pairs:
+    #             src_ip = packet.ip_header.src_ip
+    #             seq_num = packet.datagram_header.seq_num
+    #             dst_ip = packet.ip_header.dst_ip
+    #             if pair['request'] and pair['request'].datagram_header.seq_num == seq_num:
+    #                 pair['reply'] = packet
+    #             elif pair['reply'] and pair['reply'].datagram_header.seq_num == seq_num:
+    #                 pair['request'] = packet
+    #     intermediate_router_ips.add(packet.datagram_header.ip_header_copy.src_ip)
+    # for pair in pairs:
+    #     if pair['reply']:
+    #         print(f"    router {i}: {pair['request'].ip_header.dst_ip}")
+    #     i += 1
+
+def analyze_traceroute_linux(udp_packets, icmp_packets):
     if len(icmp_packets):
         icmp_value = "1: ICMP"
     if len(udp_packets):
@@ -40,8 +94,8 @@ def analyze_traceroute(udp_packets, icmp_packets):
                     src_port = packet.datagram_header.udp_copy.src_port
                     dst_ip = packet.ip_header.dst_ip
                     dst_port = packet.datagram_header.udp_copy.dst_port
-                if pair["udp"].ip_header.src_ip == dst_ip and pair["udp"].datagram_header.src_port == src_port and pair["udp"].datagram_header.dst_port == dst_port:
-                    pair["icmp"] = packet
+                    if pair["udp"].ip_header.src_ip == dst_ip and pair["udp"].datagram_header.src_port == src_port and pair["udp"].datagram_header.dst_port == dst_port:
+                        pair["icmp"] = packet
         intermediate_router_ips.add(packet.ip_header.src_ip)
     pairs = sorted(pairs, key=lambda pair: (pair["udp"].ip_header.ttl, pair["udp"].packet_No, pair["udp"].datagram_header.dst_port))
     for pair in pairs:
@@ -120,10 +174,15 @@ if __name__ == "__main__":
                         if packet.ip_header.protocol == 17:
                             udp_packets.append(packet)
                         elif packet.ip_header.protocol == 1:
+                            if packet.datagram_header.seq_num != 0 and OS == 'linux':
+                                OS = 'windows'
                             icmp_packets.append(packet)
 
     except IOError:
         print("Could not read file:", tracefile)
     finally:
         f.close()
-        analyze_traceroute(udp_packets, icmp_packets)
+        if OS == 'linux':
+            analyze_traceroute_linux(udp_packets, icmp_packets)
+        else:
+            analyze_traceroute_windows(icmp_packets)
