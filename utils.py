@@ -4,6 +4,8 @@ def filtered_packet(packet, udp_packets) -> bool:
         type = packet.datagram_header.type
         if type not in types:
             return True
+        if type == 3 and packet.datagram_header.code == 3:
+            return True
         return False
     elif packet.ip_header.protocol == 17:
         if packet.ip_header.flags != 0:
