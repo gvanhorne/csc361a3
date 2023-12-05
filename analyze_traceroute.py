@@ -55,6 +55,21 @@ def analyze_traceroute(udp_packets, icmp_packets):
     if udp_value:
         print(f"    {udp_value}")
 
+    fragments = []
+    for packet1 in udp_packets:
+        matching_elements = 0
+
+        for packet2 in udp_packets:
+            if packet1.ip_header.id == packet2.ip_header.id:
+                matching_elements += 1
+
+        fragments.append({"id": packet1.ip_header.id, "num_frag": matching_elements, "no": packet1.packet_No})
+
+    fragments = sorted(fragments, key=lambda frag: frag['id'])
+    for fragment in fragments:
+        print(f"The number of fragments created from the original datagram with id {fragment['id']} is: {fragment['num_frag']}, {fragment['no']}")
+    # print(f"The number of fragments created from the original datagram with id {packet.ip_header.identification} is: x")
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -95,12 +110,12 @@ if __name__ == "__main__":
                         packet_header.timestamp_set(packet_header_bytes[0:4], packet_header_bytes[4:8], orig_time)
 
                     # Set the packet's timestamp and add the connection to the list
-                    if packet and not filtered_packet(packet):
+                    if packet and not filtered_packet(packet, udp_packets):
                         packet.timestamp = packet_header.timestamp
                         packet.packet_No_set(num_packets)
-                        if not packet.icmp_message:
+                        if packet.ip_header.protocol == 17:
                             udp_packets.append(packet)
-                        else:
+                        elif packet.ip_header.protocol == 1:
                             icmp_packets.append(packet)
 
     except IOError:
