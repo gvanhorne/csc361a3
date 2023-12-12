@@ -2,123 +2,164 @@ import sys
 from pcap_header import PCAPHeader
 from packet_header import PacketHeader
 from packet import Packet
-from connection import Connection
 from utils import filtered_packet
+OS = 'linux'
 
-def analyze_traceroute(connections):
-    source_node = connections[0].src_ip
-    destination_node = connections[0].dst_ip
-    print(f"The IP address of the source node: {source_node}")
-    print(f"The IP address of the ultimate destination node: {destination_node}")
-    print(f"The IP addresses of intermediate nodes:")
+def analyze_traceroute_windows(icmp_packets):
+    icmp_value = None
+    if len(icmp_packets):
+        icmp_value = "1: ICMP"
+    else:
+        print(f"Error: No traceroute packets found")
+        sys.exit(1)
+    source_node = icmp_packets[0].ip_header.src_ip
+    destination_node = icmp_packets[0].ip_header.dst_ip
+    print(f"The IP Address of the source node: {source_node}")
+    print(f"The IP Address of the ultimate destination node: {destination_node}")
+    print(f"The IP Addresses of the intermediate destination nodes:")
+
+    pairs = {}
     i = 1
-    intermediate_nodes = set()
-    for connection in connections:
-        intermediate_nodes.add(connection.src_ip)
-    intermediate_nodes.remove(source_node)
-    intermediate_nodes.remove(destination_node)
-    for node in intermediate_nodes:
-        print(f"router {i}: {node}")
-        i += 1
-    return
 
-def update_duration_stats(duration, min_duration, max_duration, sum_duration):
-    """
-    Update duration statistics.
+    intermediate_router_ips = set()
+    intermediate_routers = []
 
-    Args:
-        duration (float): Duration value to be updated.
-        min_duration (float): Minimum duration value.
-        max_duration (float): Maximum duration value.
-        sum_duration (float): Sum of duration values.
+    for packet in icmp_packets:
+        if packet.datagram_header.type == 8 and packet.ip_header.src_ip == source_node:
+            seq_num = packet.datagram_header.seq_num
+            pairs[seq_num] = {"request": packet}
+    for packet in icmp_packets:
+        if packet.datagram_header.icmp_copy and packet.datagram_header.type == 11 and pairs[packet.datagram_header.icmp_copy.seq_num]:
+            if packet.ip_header.src_ip not in intermediate_router_ips:
+                pairs[packet.datagram_header.icmp_copy.seq_num]["reply"] = packet
+                intermediate_router_ips.add(packet.ip_header.src_ip)
+    for pair in pairs:
+        if len(pairs[pair]) > 1:
+            print(f"    router {i}: {pairs[pair]['reply'].ip_header.src_ip}")
+            i += 1
+    print("\nThe values in protocol fields of IP headers:")
+    if icmp_value:
+        print(f"    {icmp_value}\n")
 
-    Returns:
-        tuple: Updated min_duration, max_duration, and sum_duration.
-    """
-    new_min_duration = min(min_duration, duration)
-    new_max_duration = max(max_duration, duration)
-    new_sum_duration = sum_duration + duration
-    return new_min_duration, new_max_duration, new_sum_duration
+    fragments = []
+    for packet1 in icmp_packets:
+        matching_elements = 0
+        offset = 0
+
+        for packet2 in icmp_packets:
+            if packet1.ip_header.id == packet2.ip_header.id:
+                matching_elements += 1
+                if packet2.ip_header.offset != 0 and packet2.ip_header.flags == 0:
+                    offset = packet2.ip_header.offset
+
+        if not any(entry["id"] == packet1.ip_header.id for entry in fragments):
+            fragments.append({"id": packet1.ip_header.id, "num_frag": matching_elements, "offset": offset})
+    fragments = sorted(fragments, key=lambda frag: frag['id'])
+    for fragment in fragments:
+        if fragment['id'] != 0:
+            print(f"The number of fragments created from the original datagram with id {fragment['id']} is: {fragment['num_frag']}")
+            print(f"The offset of the last fragment is: {fragment['offset']}\n")
 
 
-def update_rtt_stats(connection, min_rtt, max_rtt, rtts):
-    """
-    Update RTT (Round-Trip Time) statistics.
 
-    Args:
-        connection (Connection): The Connection object to get RTT information from.
-        min_rtt (float): Minimum RTT value.
-        max_rtt (float): Maximum RTT value.
-        rtts (list): List of RTT values.
 
-    Returns:
-        tuple: Updated min_rtt, max_rtt, and rtts.
-    """
-    new_min_rtt = min(min_rtt, connection.get_min_rtt())
-    new_max_rtt = max(max_rtt, connection.max_RTT)
-    new_rtts = rtts + connection.get_rtts()
-    return new_min_rtt, new_max_rtt, new_rtts
+    # for packet in icmp_packets:
+    #     ip = packet.ip_header.src_ip
+    #     if packet.ip_header.src_ip not in intermediate_router_ips:
+    #         for pair in pairs:
+    #             src_ip = packet.ip_header.src_ip
+    #             seq_num = packet.datagram_header.seq_num
+    #             dst_ip = packet.ip_header.dst_ip
+    #             if pair['request'] and pair['request'].datagram_header.seq_num == seq_num:
+    #                 pair['reply'] = packet
+    #             elif pair['reply'] and pair['reply'].datagram_header.seq_num == seq_num:
+    #                 pair['request'] = packet
+    #     intermediate_router_ips.add(packet.datagram_header.ip_header_copy.src_ip)
+    # for pair in pairs:
+    #     if pair['reply']:
+    #         print(f"    router {i}: {pair['request'].ip_header.dst_ip}")
+    #     i += 1
 
-def update_packet_stats(connection, min_packets, max_packets, sum_packets):
-    """
-    Update packet statistics.
-
-    Args:
-        connection (Connection): The Connection object to get packet information from.
-        min_packets (int): Minimum number of packets.
-        max_packets (int): Maximum number of packets.
-        sum_packets (int): Sum of packet counts.
-
-    Returns:
-        tuple: Updated min_packets, max_packets, and sum_packets.
-    """
-    num_packets = connection.num_packets_to_src + connection.num_packets_to_dst
-    new_min_packets = min(min_packets, num_packets)
-    new_max_packets = max(max_packets, num_packets)
-    new_sum_packets = sum_packets + num_packets
-    return new_min_packets, new_max_packets, new_sum_packets
-
-def add_connection(packet, connections):
-    """
-    Adds a connection tuple to the connections set if it and the reverse connection are not already present.
-
-    Args:
-        packet: The packet containing connection information.
-        connections: The set of connections to which the new connection should be added.
-
-    Returns:
-        None
-    """
-    if packet.icmp_message:
-        src_port = packet.datagram_header.udp_copy.src_port
-        dst_port = packet.datagram_header.udp_copy.dst_port
+def analyze_traceroute_linux(udp_packets, icmp_packets):
+    if len(icmp_packets):
+        icmp_value = "1: ICMP"
+    if len(udp_packets):
+        udp_value = "17: UDP"
+        source_node = udp_packets[0].ip_header.src_ip
+        destination_node = udp_packets[0].ip_header.dst_ip
+    elif not len(udp_packets) and len(icmp_packets):
+        source_node = icmp_packets[0].ip_header.src_ip
+        destination_node = icmp_packets[0].ip_header.dst_ip
     else:
+        print(f"Error: No traceroute packets found")
+        sys.exit(1)
+    print(f"The IP Address of the source node: {source_node}")
+    print(f"The IP Address of the ultimate destination node: {destination_node}")
+    print(f"The IP Addresses of the intermediate destination nodes:")
+    pairs = []
+    i = 1
+
+    intermediate_router_ips = set()
+    intermediate_routers = []
+    for packet in udp_packets:
+        src_ip = packet.ip_header.src_ip
         src_port = packet.datagram_header.src_port
+        dst_ip = packet.ip_header.dst_ip
         dst_port = packet.datagram_header.dst_port
-    packet_connection = Connection(
-        packet.ip_header.src_ip,
-        src_port,
-        packet.ip_header.dst_ip,
-        dst_port
-    )
+        pairs.append({"udp": packet, "icmp": None})
+    for packet in icmp_packets:
+        ip = packet.ip_header.src_ip
+        if ip != source_node and ip != destination_node:
+            if packet.ip_header.src_ip not in intermediate_router_ips:
+                for pair in pairs:
+                    src_ip = packet.ip_header.src_ip
+                    src_port = packet.datagram_header.udp_copy.src_port
+                    dst_ip = packet.ip_header.dst_ip
+                    dst_port = packet.datagram_header.udp_copy.dst_port
+                    if pair["udp"].ip_header.src_ip == dst_ip and pair["udp"].datagram_header.src_port == src_port and pair["udp"].datagram_header.dst_port == dst_port:
+                        pair["icmp"] = packet
+        intermediate_router_ips.add(packet.ip_header.src_ip)
+    pairs = sorted(pairs, key=lambda pair: (pair["udp"].ip_header.ttl, pair["udp"].packet_No, pair["udp"].datagram_header.dst_port))
+    for pair in pairs:
+        if pair["icmp"]:
+            print(f"    router {i}: {pair['icmp'].ip_header.src_ip}")
+            i += 1
 
-    existing_connection = next((conn for conn in connections if conn == packet_connection), None)
-    if existing_connection:
-        existing_connection.add_packet(packet)
-    else:
-        # No matching connection, so append to the list of collections
-        packet_connection.connection_src = packet.ip_header.src_ip
-        packet_connection.connection_dst = packet.ip_header.dst_ip
-        packet_connection.add_packet(packet)
-        connections.append(packet_connection)
+    print("\nThe values in protocol fields of IP headers:")
+    if icmp_value:
+        print(f"    {icmp_value}")
+    if udp_value:
+        print(f"    {udp_value}\n")
+
+    fragments = []
+    for packet1 in udp_packets:
+        matching_elements = 0
+        offset = 0
+
+        for packet2 in udp_packets:
+            if packet1.ip_header.id == packet2.ip_header.id:
+                matching_elements += 1
+                if packet2.ip_header.offset != 0 and packet2.ip_header.flags == 0:
+                    offset = packet2.ip_header.offset
+
+        if not any(entry["id"] == packet1.ip_header.id for entry in fragments):
+            fragments.append({"id": packet1.ip_header.id, "num_frag": matching_elements, "offset": offset})
+    fragments = sorted(fragments, key=lambda frag: frag['id'])
+    for fragment in fragments:
+        print(f"The number of fragments created from the original datagram with id {fragment['id']} is: {fragment['num_frag']}")
+        print(f"The offset of the last fragment is: {fragment['offset']}\n")
+    # print(f"The number of fragments created from the original datagram with id {packet.ip_header.identification} is: x")
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python3 analyze_traceroute.py <tracefile>.cap")
         sys.exit(1)
-    connections = []
+    udp_packets = []
+    icmp_packets = []
     tracefile = sys.argv[1]
     orig_time = 0
+    num_packets = 0
     try:
         with open(tracefile, 'rb') as f:
             global_header_bytes = f.read(24)
@@ -138,6 +179,7 @@ if __name__ == "__main__":
 
                     # Create a Packet instance by parsing the packet data
                     packet = Packet.from_bytes(packet_bytes)
+                    num_packets += 1
 
                     # Handle the timestamp for the packet
                     if orig_time == 0:
@@ -148,12 +190,21 @@ if __name__ == "__main__":
                         packet_header.timestamp_set(packet_header_bytes[0:4], packet_header_bytes[4:8], orig_time)
 
                     # Set the packet's timestamp and add the connection to the list
-                    if packet and not filtered_packet(packet):
+                    if packet and not filtered_packet(packet, udp_packets):
                         packet.timestamp = packet_header.timestamp
-                        add_connection(packet, connections)
+                        packet.packet_No_set(num_packets)
+                        if packet.ip_header.protocol == 17:
+                            udp_packets.append(packet)
+                        elif packet.ip_header.protocol == 1:
+                            if packet.datagram_header.seq_num != 0 and OS == 'linux':
+                                OS = 'windows'
+                            icmp_packets.append(packet)
 
     except IOError:
         print("Could not read file:", tracefile)
     finally:
         f.close()
-        analyze_traceroute(connections)
+        if OS == 'linux':
+            analyze_traceroute_linux(udp_packets, icmp_packets)
+        else:
+            analyze_traceroute_windows(icmp_packets)

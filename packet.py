@@ -41,10 +41,13 @@ class Packet():
         ip_header = IPHeader()
         ip_header.get_header_len(packet_bytes[14:15])
         ip_header.get_total_len(packet_bytes[16:18])
+        ip_header.get_identification(packet_bytes[18:20])
+        ip_header.get_flags(packet_bytes[20])
         ip_header_bytes = packet_bytes[14:14+ip_header.ip_header_len]
         ip_header.get_ttl(packet_bytes[22:23])
         protocol = ip_header.get_protocol(packet_bytes[23:24])
         ip_header.get_IP(packet_bytes[26:30], packet_bytes[30:34])
+        ip_header.get_frag_offset(packet_bytes[20:22])
 
         icmp = False
         if ip_header.protocol == 17:
@@ -67,6 +70,9 @@ class Packet():
             ip_header_copy = IPHeader()
             ip_header_copy.get_header_len(packet_bytes[offset: offset + 1])
             ip_header_copy.get_total_len(packet_bytes[offset + 2: offset + 4])
+            ip_header_copy.get_identification(packet_bytes[offset + 4: offset + 6])
+            ip_header_copy.get_flags(packet_bytes[offset + 6])
+            ip_header_copy.get_frag_offset(packet_bytes[offset + 6:offset + 8])
             ip_header_bytes = packet_bytes[offset:offset + ip_header_copy.ip_header_len]
             ip_header.get_ttl(packet_bytes[offset + 8: offset + 9])
             protocol = ip_header_copy.get_protocol(packet_bytes[offset + 9: offset + 10])
@@ -81,12 +87,13 @@ class Packet():
                 udp_header_copy.get_checksum(packet_bytes[offset + 6:offset + 8])
                 udp_header_copy.set_data_offset()
                 header.set_udp_copy(udp_header_copy)
-
-            # ip_header.get_header_len(packet_bytes[14:15])
-            # ip_header.get_total_len(packet_bytes[16:18])
-            # ip_header_bytes = packet_bytes[14:14+ip_header.ip_header_len]
-            # protocol = ip_header.get_protocol(packet_bytes[23:24])
-            # ip_header.get_IP(packet_bytes[26:30], packet_bytes[30:34])
+            elif ip_header_copy.protocol == 1:
+                icmp_header_copy = ICMPHeader()
+                icmp_header_copy.get_type(packet_bytes[offset:offset + 1])
+                icmp_header_copy.get_code(packet_bytes[offset + 1: offset + 2])
+                icmp_header_copy.get_checksum(packet_bytes[offset + 2: offset + 4])
+                icmp_header_copy.get_rest_of_header(packet_bytes[offset + 4: offset + 8])
+                header.set_icmp_copy(icmp_header_copy)
         else:
             return
         return cls(ip_header, header, packet_bytes, icmp)
